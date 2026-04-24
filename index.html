@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spurs Ticket Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f4;
+    color: #111;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  #site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 68px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .sa-badge {
+    background: #C4CED4;
+    color: #000;
+    font-weight: 900;
+    font-size: 1.1rem;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .header-titles { line-height: 1.2; }
+  .header-titles h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; }
+  .header-titles p  { font-size: .75rem; color: #C4CED4; }
+  .header-total { text-align: right; }
+  .header-total .label { font-size: .7rem; color: #C4CED4; text-transform: uppercase; letter-spacing: .08em; }
+  .header-total .value { font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
+  .val-pos { color: #66bb6a; }
+  .val-neg { color: #ef5350; }
+  .val-zero{ color: #fff; }
+
+  /* ── Main ── */
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+  }
+  .btn-add {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 9px 20px;
+    font-size: .9rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-add:hover { background: #222; }
+
+  /* ── Table ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.12);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    min-width: 820px;
+  }
+  thead th {
+    background: #000;
+    color: #C4CED4;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 11px 10px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child  { border-radius: 0 8px 0 0; }
+
+  tbody tr:nth-child(even) { background: #f5f7f8; }
+  tbody tr:hover { background: #eaf0f5; }
+  tbody td {
+    padding: 9px 10px;
+    font-size: .88rem;
+    border-bottom: 1px solid #e8eaec;
+  }
+
+  .pl-pos { color: #2e7d32; font-weight: 700; }
+  .pl-neg { color: #c62828; font-weight: 700; }
+  .pl-zero{ color: #555; font-weight: 600; }
+
+  /* totals row */
+  tfoot td {
+    background: #000;
+    color: #fff;
+    font-weight: 700;
+    font-size: .88rem;
+    padding: 10px 10px;
+    border-bottom: none;
+  }
+  tfoot tr td:first-child { border-radius: 0 0 0 8px; }
+  tfoot tr td:last-child  { border-radius: 0 0 8px 0; }
+
+  .action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: background .12s;
+  }
+  .action-btn:hover { background: #e0e3e6; }
+
+  .empty-row td {
+    text-align: center;
+    color: #888;
+    padding: 32px;
+    font-size: .92rem;
+  }
+
+  /* ── Modal ── */
+  #modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-backdrop.open { display: flex; }
+
+  #modal {
+    background: #fff;
+    border-radius: 10px;
+    width: min(560px, 96vw);
+    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    overflow: hidden;
+  }
+  .modal-header {
+    background: #000;
+    color: #fff;
+    padding: 16px 20px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .modal-body { padding: 20px; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: .78rem; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: .05em; }
+  input[type="text"], input[type="date"], input[type="number"] {
+    border: 1.5px solid #ccc;
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: #000; }
+
+  .pl-preview {
+    grid-column: 1 / -1;
+    background: #f5f7f8;
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: .88rem;
+  }
+  .pl-preview .preview-label { color: #555; font-weight: 600; }
+  .pl-preview .preview-value { font-size: 1.1rem; font-weight: 800; }
+
+  .modal-footer {
+    padding: 14px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #eee;
+  }
+  .btn-cancel {
+    background: #fff;
+    border: 1.5px solid #ccc;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .btn-cancel:hover { border-color: #888; }
+  .btn-save {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-save:hover { background: #222; }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #C4CED4;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    font-size: .9rem;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+  }
+  .tab-btn:hover { color: #111; }
+  .tab-btn.active { color: #000; border-bottom-color: #000; }
+
+  /* ── News ── */
+  #tab-news { display: none; }
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 18px;
+  }
+  .news-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .15s;
+  }
+  .news-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+  .news-card img {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    display: block;
+  }
+  .news-card-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .news-card-meta { font-size: .72rem; color: #888; text-transform: uppercase; letter-spacing: .06em; }
+  .news-card-headline { font-size: .97rem; font-weight: 700; line-height: 1.35; color: #111; }
+  .news-card-desc { font-size: .84rem; color: #555; line-height: 1.5; flex: 1; }
+  .news-card-link {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #000;
+    text-decoration: none;
+    border-bottom: 1.5px solid #C4CED4;
+    width: fit-content;
+  }
+  .news-card-link:hover { border-bottom-color: #000; }
+
+  .news-status {
+    text-align: center;
+    padding: 48px 16px;
+    color: #888;
+    font-size: .95rem;
+  }
+
+  /* ── Loading spinner ── */
+  .fetch-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 48px 16px;
+  }
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid #C4CED4;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin .75s linear infinite;
+  }
+  .fetch-loading-text {
+    font-size: .88rem;
+    color: #888;
+    letter-spacing: .02em;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .news-fetch-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 12px;
+  }
+  .news-fetch-bar p {
+    font-size: .82rem;
+    color: #777;
+  }
+  .btn-fetch {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, opacity .15s;
+  }
+  .btn-fetch:hover:not(:disabled) { background: #222; }
+  .btn-fetch:disabled { opacity: .5; cursor: default; }
+
+  /* ── Odds ── */
+  #tab-odds { display: none; }
+  .odds-section { margin-bottom: 28px; }
+  .odds-section-title {
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: #888;
+    margin-bottom: 10px;
+  }
+
+  /* Game card */
+  .game-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    overflow: hidden;
+  }
+  .game-card-header {
+    background: #000;
+    color: #fff;
+    padding: 14px 18px;
+  }
+  .game-card-header .matchup { font-size: 1.15rem; font-weight: 800; }
+  .game-card-header .game-meta { font-size: .75rem; color: #C4CED4; margin-top: 2px; }
+  .injury-alert {
+    background: #fff3cd;
+    border-left: 4px solid #f0ad4e;
+    padding: 8px 14px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #7a5700;
+  }
+  .odds-boxes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    divide-color: #eee;
+  }
+  .odds-box {
+    padding: 16px 14px;
+    border-right: 1px solid #eee;
+    text-align: center;
+  }
+  .odds-box:last-child { border-right: none; }
+  .odds-box-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #999; margin-bottom: 10px; }
+  .odds-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: .85rem; }
+  .odds-row:last-child { margin-bottom: 0; }
+  .odds-team { color: #444; font-weight: 500; text-align: left; }
+  .odds-val { font-weight: 800; font-size: .92rem; }
+  .odds-fav  { color: #c62828; }
+  .odds-dog  { color: #2e7d32; }
+  .odds-even { color: #555; }
+
+  /* Series / futures cards */
+  .odds-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    overflow: hidden;
+  }
+  .odds-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 16px;
+    border-bottom: 1px solid #f0f2f4;
+    font-size: .88rem;
+  }
+  .odds-card-row:last-child { border-bottom: none; }
+  .odds-card-row .team-name { font-weight: 600; color: #111; }
+  .odds-card-row .team-detail { font-size: .75rem; color: #888; margin-top: 1px; }
+
+  .futures-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* Props table */
+  .props-table {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    border-collapse: collapse;
+    overflow: hidden;
+  }
+  .props-table th {
+    background: #000;
+    color: #C4CED4;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 9px 14px;
+    text-align: left;
+  }
+  .props-table td {
+    padding: 10px 14px;
+    font-size: .87rem;
+    border-bottom: 1px solid #f0f2f4;
+    color: #333;
+  }
+  .props-table tr:last-child td { border-bottom: none; }
+  .props-table tr:nth-child(even) td { background: #f8f9fa; }
+  .prop-line { font-weight: 800; font-size: .95rem; }
+  .prop-note { font-size: .75rem; color: #888; margin-top: 2px; }
+
+  .odds-disclaimer {
+    font-size: .74rem;
+    color: #aaa;
+    text-align: center;
+    margin-top: 20px;
+    line-height: 1.5;
+  }
+
+  /* ── Odds fetch bar ── */
+  .odds-fetch-bar {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .odds-fetch-bar label {
+    font-size: .78rem;
+    font-weight: 700;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+  .odds-key-input {
+    flex: 1;
+    min-width: 180px;
+    border: 1.5px solid #ccc;
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: .88rem;
+    outline: none;
+    font-family: monospace;
+    transition: border-color .15s;
+  }
+  .odds-key-input:focus { border-color: #000; }
+  .odds-fetch-bar .key-hint {
+    font-size: .75rem;
+    color: #999;
+    white-space: nowrap;
+  }
+  .odds-fetch-bar .key-hint a { color: #555; }
+  .live-odds-result { margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<header id="site-header">
+  <div class="header-left">
+    <div class="sa-badge">SA</div>
+    <div class="header-titles">
+      <h1>Spurs Ticket Tracker</h1>
+      <p>San Antonio Spurs</p>
+    </div>
+  </div>
+  <div class="header-total">
+    <div class="label">Total Profit / Loss</div>
+    <div class="value" id="header-total">$0.00</div>
+  </div>
+</header>
+
+<main>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-tracker" onclick="switchTab('tracker')">My Transactions</button>
+    <button class="tab-btn" id="tab-btn-news" onclick="switchTab('news')">Spurs News</button>
+    <button class="tab-btn" id="tab-btn-odds" onclick="switchTab('odds')">Betting Odds</button>
+  </div>
+
+  <div id="tab-tracker">
+    <div class="toolbar">
+      <button class="btn-add" onclick="openModal(null)">+ Add Entry</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Event</th>
+            <th>Event Date</th>
+            <th>Seats</th>
+            <th>Qty</th>
+            <th>Purchase Price</th>
+            <th>Sale Price</th>
+            <th>Costs</th>
+            <th>Profit / Loss</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+        <tfoot id="tbl-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-news">
+    <div class="news-fetch-bar">
+      <p>Curated stories below &mdash; click to pull the latest directly from ESPN.</p>
+      <button class="btn-fetch" id="fetch-news-btn" onclick="fetchLiveNews()">&#8635; Fetch Latest Spurs News</button>
+    </div>
+    <div id="news-container"></div>
+  </div>
+
+  <div id="tab-odds">
+
+    <!-- Live fetch bar -->
+    <div class="odds-fetch-bar">
+      <label for="odds-api-key">API Key</label>
+      <input type="text" id="odds-api-key" class="odds-key-input" placeholder="Paste your free key from the-odds-api.com">
+      <button class="btn-fetch" id="fetch-odds-btn" onclick="fetchLiveOdds()">&#8635; Fetch Live Odds</button>
+      <span class="key-hint">Free key at <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a> &mdash; 500 req/mo</span>
+    </div>
+    <div id="live-odds-result"></div>
+
+    <!-- Tonight's Game -->
+    <div class="odds-section">
+      <div class="odds-section-title">Tonight's Game &mdash; Game 3</div>
+      <div class="game-card">
+        <div class="game-card-header">
+          <div class="matchup">San Antonio Spurs @ Portland Trail Blazers</div>
+          <div class="game-meta">Fri Apr 25, 2026 &nbsp;·&nbsp; 10:30 ET &nbsp;·&nbsp; Prime Video &nbsp;·&nbsp; Series tied 1-1</div>
+        </div>
+        <div class="injury-alert">&#9888; Victor Wembanyama (concussion) — QUESTIONABLE. Lines may shift at tip-off.</div>
+        <div class="odds-boxes">
+          <div class="odds-box">
+            <div class="odds-box-label">Spread</div>
+            <div class="odds-row">
+              <span class="odds-team">Spurs</span>
+              <span class="odds-val odds-fav">-2.5 (-118)</span>
+            </div>
+            <div class="odds-row">
+              <span class="odds-team">Trail Blazers</span>
+              <span class="odds-val odds-dog">+2.5 (-102)</span>
+            </div>
+          </div>
+          <div class="odds-box">
+            <div class="odds-box-label">Moneyline</div>
+            <div class="odds-row">
+              <span class="odds-team">Spurs</span>
+              <span class="odds-val odds-fav">-137</span>
+            </div>
+            <div class="odds-row">
+              <span class="odds-team">Trail Blazers</span>
+              <span class="odds-val odds-dog">+115</span>
+            </div>
+          </div>
+          <div class="odds-box">
+            <div class="odds-box-label">Total</div>
+            <div class="odds-row">
+              <span class="odds-team">Over 220.5</span>
+              <span class="odds-val odds-even">-108</span>
+            </div>
+            <div class="odds-row">
+              <span class="odds-team">Under 220.5</span>
+              <span class="odds-val odds-even">-112</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Series Odds -->
+    <div class="odds-section">
+      <div class="odds-section-title">Series Odds &mdash; Spurs vs Trail Blazers (Tied 1-1)</div>
+      <div class="odds-card">
+        <div class="odds-card-row">
+          <div><div class="team-name">San Antonio Spurs</div><div class="team-detail">2 seed · Won Game 1 111-98</div></div>
+          <span class="odds-val odds-fav">-600</span>
+        </div>
+        <div class="odds-card-row">
+          <div><div class="team-name">Portland Trail Blazers</div><div class="team-detail">7 seed · Won Game 2 106-103</div></div>
+          <span class="odds-val odds-dog">+450</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Futures -->
+    <div class="odds-section">
+      <div class="odds-section-title">Futures</div>
+      <div class="futures-grid">
+        <div>
+          <div class="odds-section-title" style="margin-bottom:8px">NBA Championship</div>
+          <div class="odds-card">
+            <div class="odds-card-row">
+              <div><div class="team-name">Oklahoma City Thunder</div></div>
+              <span class="odds-val odds-fav">-120</span>
+            </div>
+            <div class="odds-card-row">
+              <div><div class="team-name">San Antonio Spurs</div></div>
+              <span class="odds-val odds-dog">+650</span>
+            </div>
+            <div class="odds-card-row">
+              <div><div class="team-name">Boston Celtics</div></div>
+              <span class="odds-val odds-dog">+700</span>
+            </div>
+            <div class="odds-card-row">
+              <div><div class="team-name">Cleveland Cavaliers</div></div>
+              <span class="odds-val odds-dog">+800</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="odds-section-title" style="margin-bottom:8px">Finals MVP</div>
+          <div class="odds-card">
+            <div class="odds-card-row">
+              <div><div class="team-name">Shai Gilgeous-Alexander</div><div class="team-detail">Oklahoma City Thunder</div></div>
+              <span class="odds-val odds-fav">+115</span>
+            </div>
+            <div class="odds-card-row">
+              <div><div class="team-name">Victor Wembanyama</div><div class="team-detail">San Antonio Spurs</div></div>
+              <span class="odds-val odds-dog">+550</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player Props -->
+    <div class="odds-section">
+      <div class="odds-section-title">Wembanyama Player Props Reference &mdash; 2025-26 Regular Season Averages</div>
+      <table class="props-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Prop</th>
+            <th>Season Avg</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Victor Wembanyama</td>
+            <td>Points</td>
+            <td><span class="prop-line">25.0</span></td>
+            <td><span class="prop-note">Scored 35 in Game 1 playoff debut; QUESTIONABLE Game 3</span></td>
+          </tr>
+          <tr>
+            <td>Victor Wembanyama</td>
+            <td>Rebounds</td>
+            <td><span class="prop-line">11.5</span></td>
+            <td><span class="prop-note">League's premier rebounder at his position</span></td>
+          </tr>
+          <tr>
+            <td>Victor Wembanyama</td>
+            <td>Blocks</td>
+            <td><span class="prop-line">3.1</span></td>
+            <td><span class="prop-note">Led the NBA; won 2026 Defensive Player of the Year</span></td>
+          </tr>
+          <tr>
+            <td>Victor Wembanyama</td>
+            <td>Assists</td>
+            <td><span class="prop-line">3.1</span></td>
+            <td><span class="prop-note">Emerging playmaker; elevated in playoffs</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="odds-disclaimer">
+      Odds sourced from DraftKings, FanDuel &amp; Covers.com as of Apr 24, 2026. Lines move — always verify before betting.<br>
+      If you or someone you know has a gambling problem, call 1-800-GAMBLER.
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div id="modal-backdrop" onclick="backdropClick(event)">
+  <div id="modal">
+    <div class="modal-header" id="modal-title">Add Entry</div>
+    <div class="modal-body">
+      <form id="entry-form" onsubmit="onSubmit(event)">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="f-event">Event</label>
+            <input type="text" id="f-event" placeholder="e.g. Spurs vs Lakers" required>
+          </div>
+          <div class="form-group">
+            <label for="f-date">Event Date</label>
+            <input type="date" id="f-date" required>
+          </div>
+          <div class="form-group">
+            <label for="f-seats">Seats</label>
+            <input type="text" id="f-seats" placeholder="e.g. Sec 101, Row 5">
+          </div>
+          <div class="form-group">
+            <label for="f-qty">Quantity</label>
+            <input type="number" id="f-qty" min="0" step="1" value="0" required>
+          </div>
+          <div class="form-group">
+            <label for="f-purchase">Purchase Price ($)</label>
+            <input type="number" id="f-purchase" min="0" step="0.01" value="0" required>
+          </div>
+          <div class="form-group">
+            <label for="f-sale">Sale Price ($)</label>
+            <input type="number" id="f-sale" min="0" step="0.01" value="0" required>
+          </div>
+          <div class="form-group">
+            <label for="f-costs">Costs / Fees ($)</label>
+            <input type="number" id="f-costs" min="0" step="0.01" value="0" required>
+          </div>
+          <div class="pl-preview">
+            <span class="preview-label">Profit / Loss Preview</span>
+            <span class="preview-value" id="pl-preview-val">$0.00</span>
+          </div>
+        </div>
+        <input type="hidden" id="f-id">
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button type="submit" form="entry-form" class="btn-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'spursTickets';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+  catch { return []; }
+}
+
+function save(entries) {
+  localStorage.setItem(KEY, JSON.stringify(entries));
+}
+
+function uid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function profit(e) {
+  return (e.salePrice || 0) - (e.purchasePrice || 0) - (e.costs || 0);
+}
+
+function fmt(n) {
+  const abs = Math.abs(n).toFixed(2);
+  return (n < 0 ? '-' : '') + '$' + abs;
+}
+
+function plClass(n) {
+  if (n > 0) return 'pl-pos';
+  if (n < 0) return 'pl-neg';
+  return 'pl-zero';
+}
+
+function headerClass(n) {
+  if (n > 0) return 'val-pos';
+  if (n < 0) return 'val-neg';
+  return 'val-zero';
+}
+
+function totals(entries) {
+  return entries.reduce((acc, e) => {
+    acc.qty           += (e.qty || 0);
+    acc.purchasePrice += (e.purchasePrice || 0);
+    acc.salePrice     += (e.salePrice || 0);
+    acc.costs         += (e.costs || 0);
+    acc.pl            += profit(e);
+    return acc;
+  }, { qty: 0, purchasePrice: 0, salePrice: 0, costs: 0, pl: 0 });
+}
+
+function render() {
+  const entries = load().sort((a, b) => b.eventDate.localeCompare(a.eventDate));
+  const body = document.getElementById('tbl-body');
+  const foot = document.getElementById('tbl-foot');
+
+  if (entries.length === 0) {
+    body.innerHTML = `<tr class="empty-row"><td colspan="10">No entries yet. Click "Add Entry" to get started.</td></tr>`;
+    foot.innerHTML = '';
+    setHeader(0);
+    return;
+  }
+
+  body.innerHTML = entries.map((e, i) => {
+    const pl = profit(e);
+    const dateStr = e.eventDate
+      ? new Date(e.eventDate + 'T12:00:00').toLocaleDateString()
+      : '';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${esc(e.event)}</td>
+      <td>${dateStr}</td>
+      <td>${esc(e.seats)}</td>
+      <td>${e.qty}</td>
+      <td>$${(e.purchasePrice||0).toFixed(2)}</td>
+      <td>$${(e.salePrice||0).toFixed(2)}</td>
+      <td>$${(e.costs||0).toFixed(2)}</td>
+      <td class="${plClass(pl)}">${fmt(pl)}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" title="Edit" onclick="openModal(${JSON.stringify(e).replace(/"/g,'&quot;')})">&#9998;</button>
+        <button class="action-btn" title="Delete" onclick="del('${e.id}')">&#128465;</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const t = totals(entries);
+  foot.innerHTML = `<tr>
+    <td colspan="4">Totals</td>
+    <td>${t.qty}</td>
+    <td>$${t.purchasePrice.toFixed(2)}</td>
+    <td>$${t.salePrice.toFixed(2)}</td>
+    <td>$${t.costs.toFixed(2)}</td>
+    <td class="${plClass(t.pl)}">${fmt(t.pl)}</td>
+    <td></td>
+  </tr>`;
+
+  setHeader(t.pl);
+}
+
+function setHeader(total) {
+  const el = document.getElementById('header-total');
+  el.textContent = fmt(total);
+  el.className = 'value ' + headerClass(total);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function del(id) {
+  if (!confirm('Delete this entry?')) return;
+  save(load().filter(e => e.id !== id));
+  render();
+}
+
+let editId = null;
+
+function openModal(entry) {
+  editId = entry ? entry.id : null;
+  document.getElementById('modal-title').textContent = entry ? 'Edit Entry' : 'Add Entry';
+  document.getElementById('f-id').value       = editId || '';
+  document.getElementById('f-event').value    = entry ? entry.event       : '';
+  document.getElementById('f-date').value     = entry ? entry.eventDate   : '';
+  document.getElementById('f-seats').value    = entry ? entry.seats       : '';
+  document.getElementById('f-qty').value      = entry ? entry.qty         : 0;
+  document.getElementById('f-purchase').value = entry ? entry.purchasePrice : 0;
+  document.getElementById('f-sale').value     = entry ? entry.salePrice   : 0;
+  document.getElementById('f-costs').value    = entry ? entry.costs       : 0;
+  updatePreview();
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('f-event').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.getElementById('entry-form').reset();
+  editId = null;
+}
+
+function backdropClick(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal();
+}
+
+function updatePreview() {
+  const sale     = parseFloat(document.getElementById('f-sale').value)     || 0;
+  const purchase = parseFloat(document.getElementById('f-purchase').value) || 0;
+  const costs    = parseFloat(document.getElementById('f-costs').value)    || 0;
+  const pl = sale - purchase - costs;
+  const el = document.getElementById('pl-preview-val');
+  el.textContent = fmt(pl);
+  el.className   = 'preview-value ' + plClass(pl);
+}
+
+document.getElementById('f-sale').addEventListener('input', updatePreview);
+document.getElementById('f-purchase').addEventListener('input', updatePreview);
+document.getElementById('f-costs').addEventListener('input', updatePreview);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+function onSubmit(e) {
+  e.preventDefault();
+  const entries = load();
+  const entry = {
+    id:            editId || uid(),
+    event:         document.getElementById('f-event').value.trim(),
+    eventDate:     document.getElementById('f-date').value,
+    seats:         document.getElementById('f-seats').value.trim(),
+    qty:           parseInt(document.getElementById('f-qty').value)          || 0,
+    purchasePrice: parseFloat(document.getElementById('f-purchase').value)   || 0,
+    salePrice:     parseFloat(document.getElementById('f-sale').value)       || 0,
+    costs:         parseFloat(document.getElementById('f-costs').value)      || 0,
+  };
+
+  if (editId) {
+    const idx = entries.findIndex(x => x.id === editId);
+    if (idx !== -1) entries[idx] = entry;
+  } else {
+    entries.push(entry);
+  }
+
+  save(entries);
+  render();
+  closeModal();
+}
+
+render();
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+let newsLoaded = false;
+
+function switchTab(name) {
+  ['tracker', 'news', 'odds'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+    document.getElementById('tab-btn-' + t).classList.toggle('active', t === name);
+  });
+  if (name === 'news') loadNews();
+}
+
+// ── News ──────────────────────────────────────────────────────────────────
+const STATIC_NEWS = [
+  {
+    cat: 'Playoffs · Game 3',
+    date: 'Apr 24, 2026',
+    headline: 'Wembanyama Questionable for Game 3 Tonight in Portland',
+    desc: 'Victor Wembanyama was cleared to travel with the team but is officially listed as questionable for tonight\'s Game 3 (10:30 ET, Prime Video) after suffering a concussion in Game 2. He returned to the practice facility Thursday for light cardio and additional evaluation. The series is tied 1-1.',
+    url: 'https://sports.yahoo.com/articles/spurs-announce-victor-wembanyamas-official-003709936.html',
+  },
+  {
+    cat: 'Playoffs · Game 2 Recap',
+    date: 'Apr 22, 2026',
+    headline: 'Blazers Even Series 1-1 After Wembanyama Exits with Concussion',
+    desc: 'Scoot Henderson erupted for 31 points to lead Portland to a 106-103 victory after Wembanyama was forced out in the second half with a concussion. Wembanyama\'s injury, suffered on an awkward fall, cast a shadow over the Spurs heading into Games 3 and 4 in Portland.',
+    url: 'https://www.espn.com/nba/story/_/id/48419498/nba-playoffs-2026-play-finals-schedule-scores-news-highlights-bracket-dates',
+  },
+  {
+    cat: 'Playoffs · Game 1 Recap',
+    date: 'Apr 19, 2026',
+    headline: 'Wembanyama Drops 35 in Historic Playoff Debut, Spurs Win 111-98',
+    desc: 'Victor Wembanyama scored 35 points — a Spurs franchise record for a playoff debut, surpassing Tim Duncan\'s 32 in 1998 — as San Antonio controlled Game 1 from start to finish. His 21 first-half points set an NBA record for the most in the opening half of a playoff debut since the play-by-play era began.',
+    url: 'https://www.espn.com/nba/recap/_/gameId/401869194',
+  },
+  {
+    cat: 'Award · Sixth Man of the Year',
+    date: 'Apr 22, 2026',
+    headline: 'Keldon Johnson Wins 2026 NBA Sixth Man of the Year',
+    desc: 'Keldon Johnson was named the 2025-26 Kia NBA Sixth Man of the Year, joining Manu Ginobili as the only Spurs players to win the award. Johnson averaged 13.2 points and 5.4 rebounds per game off the bench, shot 52% from the floor, set a Spurs franchise record with 1,081 bench points, and played all 82 games.',
+    url: 'https://www.nba.com/news/kia-nba-sixth-man-2025-26',
+  },
+  {
+    cat: 'Award · Defensive Player of the Year',
+    date: 'Apr 2026',
+    headline: 'Wembanyama Named 2026 NBA Defensive Player of the Year',
+    desc: 'Victor Wembanyama has been named the 2026 NBA Defensive Player of the Year, becoming the youngest player in league history to win the award. The honor continues his emergence as one of the most dominant two-way players in the NBA in just his third season.',
+    url: 'https://www.nba.com/spurs/playoffs',
+  },
+  {
+    cat: 'Playoff Schedule',
+    date: 'Apr 2026',
+    headline: 'Spurs vs. Trail Blazers: Full First-Round Schedule (Series Tied 1-1)',
+    desc: 'The #2 Spurs face the #7 Trail Blazers in the Western Conference First Round. Remaining schedule: Game 3 — Fri Apr 25 @ Portland, 10:30 ET (Prime Video) · Game 4 — Sun Apr 26 @ Portland, 3:30 ET (ESPN) · Game 5 — Tue Apr 28 vs Portland, 9:30 ET (ESPN) · Games 6 & 7 if necessary.',
+    url: 'https://www.nba.com/playoffs/2026/west-first-round-2',
+  },
+];
+
+function loadNews() {
+  if (newsLoaded) return;
+  document.getElementById('news-container').innerHTML =
+    `<div class="news-grid">${STATIC_NEWS.map(renderStaticCard).join('')}</div>`;
+  newsLoaded = true;
+}
+
+function renderStaticCard(a) {
+  return `<div class="news-card">
+    <div class="news-card-body">
+      <div class="news-card-meta">${esc(a.cat)} &nbsp;·&nbsp; ${esc(a.date)}</div>
+      <div class="news-card-headline">${esc(a.headline)}</div>
+      <div class="news-card-desc">${esc(a.desc)}</div>
+      <a class="news-card-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read more &rarr;</a>
+    </div>
+  </div>`;
+}
+
+async function fetchLiveNews() {
+  const container = document.getElementById('news-container');
+  const btn = document.getElementById('fetch-news-btn');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  container.innerHTML = '<div class="fetch-loading"><div class="spinner"></div><div class="fetch-loading-text">Fetching latest Spurs news…</div></div>';
+
+  const ESPN_URL = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/26/news?limit=20';
+  // allorigins proxies the request and adds CORS headers, needed when opening as a local file
+  const PROXY_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent(ESPN_URL);
+
+  let articles = null;
+
+  // Try direct first (works when served over http), then proxy fallback
+  for (const [url, isProxy] of [[ESPN_URL, false], [PROXY_URL, true]]) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const raw = await res.json();
+      const data = isProxy ? JSON.parse(raw.contents) : raw;
+      const list = (data.articles || []).filter(a => a.headline);
+      if (list.length > 0) { articles = list; break; }
+    } catch { /* try next */ }
+  }
+
+  if (articles) {
+    container.innerHTML = `<div class="news-grid">${articles.map(renderLiveCard).join('')}</div>`;
+    newsLoaded = true;
+  } else {
+    container.innerHTML =
+      '<div class="news-status">Could not reach ESPN &mdash; showing curated stories instead.</div>' +
+      `<div class="news-grid" style="margin-top:16px">${STATIC_NEWS.map(renderStaticCard).join('')}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '↺ Fetch Latest Spurs News';
+}
+
+function renderLiveCard(a) {
+  const img  = a.images && a.images[0]
+    ? `<img src="${esc(a.images[0].url)}" alt="" loading="lazy">`
+    : '';
+  const date = a.published
+    ? new Date(a.published).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
+  const cat  = (a.categories && a.categories[0] && a.categories[0].description)
+    ? a.categories[0].description
+    : (a.type || 'News');
+  const url  = a.links && a.links.web ? a.links.web.href : '#';
+  const desc = a.description ? `<div class="news-card-desc">${esc(a.description)}</div>` : '';
+  return `<div class="news-card">
+    ${img}
+    <div class="news-card-body">
+      <div class="news-card-meta">${esc(cat)}${date ? ' &nbsp;&middot;&nbsp; ' + date : ''}</div>
+      <div class="news-card-headline">${esc(a.headline)}</div>
+      ${desc}
+      <a class="news-card-link" href="${esc(url)}" target="_blank" rel="noopener">Read more &rarr;</a>
+    </div>
+  </div>`;
+}
+
+// ── Live Odds ─────────────────────────────────────────────────────────────
+
+// Restore saved API key on load
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('oddsApiKey');
+  if (saved) document.getElementById('odds-api-key').value = saved;
+});
+
+async function fetchLiveOdds() {
+  const key = document.getElementById('odds-api-key').value.trim();
+  if (!key) {
+    alert('Paste your free API key from the-odds-api.com first.');
+    document.getElementById('odds-api-key').focus();
+    return;
+  }
+  localStorage.setItem('oddsApiKey', key);
+
+  const btn = document.getElementById('fetch-odds-btn');
+  const result = document.getElementById('live-odds-result');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  result.innerHTML = '<div class="news-status">Fetching live NBA odds…</div>';
+
+  try {
+    const url =
+      'https://api.the-odds-api.com/v4/sports/basketball_nba/odds/' +
+      '?apiKey=' + encodeURIComponent(key) +
+      '&regions=us&markets=h2h,spreads,totals&bookmakers=draftkings,fanduel&oddsFormat=american';
+    const res = await fetch(url);
+    if (res.status === 401) throw new Error('auth');
+    if (res.status === 422) throw new Error('quota');
+    if (!res.ok) throw new Error('network');
+    const games = await res.json();
+
+    const spursGames = games.filter(g =>
+      g.home_team.toLowerCase().includes('san antonio') ||
+      g.away_team.toLowerCase().includes('san antonio')
+    );
+
+    if (spursGames.length === 0) {
+      result.innerHTML = '<div class="news-status">No upcoming Spurs games found in the live feed right now.</div>';
+    } else {
+      result.innerHTML =
+        '<div class="odds-section-title" style="margin-bottom:10px">Live Odds &mdash; Updated Just Now</div>' +
+        spursGames.map(renderLiveGame).join('');
+    }
+  } catch (err) {
+    const msg = err.message === 'auth'  ? 'Invalid API key — check it and try again.' :
+                err.message === 'quota' ? 'Monthly request quota exceeded on your free key.' :
+                'Could not reach the odds service. Check your connection and try again.';
+    result.innerHTML = `<div class="news-status">${msg}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↺ Fetch Live Odds';
+  }
+}
+
+function renderLiveGame(g) {
+  const tip  = new Date(g.commence_time);
+  const when = tip.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }) +
+               ' · ' + tip.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+
+  // Prefer DraftKings, fall back to first available bookmaker
+  const book = g.bookmakers.find(b => b.key === 'draftkings') || g.bookmakers[0];
+  if (!book) return '';
+
+  const h2h     = book.markets.find(m => m.key === 'h2h');
+  const spreads = book.markets.find(m => m.key === 'spreads');
+  const totals  = book.markets.find(m => m.key === 'totals');
+
+  const mlHome = h2h     && h2h.outcomes.find(o => o.name === g.home_team);
+  const mlAway = h2h     && h2h.outcomes.find(o => o.name === g.away_team);
+  const spHome = spreads && spreads.outcomes.find(o => o.name === g.home_team);
+  const spAway = spreads && spreads.outcomes.find(o => o.name === g.away_team);
+  const over   = totals  && totals.outcomes.find(o => o.name === 'Over');
+  const under  = totals  && totals.outcomes.find(o => o.name === 'Under');
+
+  const fmtOdds = n => n == null ? '—' : (n > 0 ? '+' + n : String(n));
+  const fmtSpread = o => o ? (o.point > 0 ? '+' : '') + o.point + ' (' + fmtOdds(o.price) + ')' : '—';
+
+  return `<div class="game-card live-odds-result" style="margin-bottom:16px">
+    <div class="game-card-header">
+      <div class="matchup">${esc(g.away_team)} @ ${esc(g.home_team)}</div>
+      <div class="game-meta">${when} &nbsp;·&nbsp; ${esc(book.title)}</div>
+    </div>
+    <div class="odds-boxes">
+      <div class="odds-box">
+        <div class="odds-box-label">Spread</div>
+        <div class="odds-row"><span class="odds-team">${esc(g.away_team)}</span><span class="odds-val">${fmtSpread(spAway)}</span></div>
+        <div class="odds-row"><span class="odds-team">${esc(g.home_team)}</span><span class="odds-val">${fmtSpread(spHome)}</span></div>
+      </div>
+      <div class="odds-box">
+        <div class="odds-box-label">Moneyline</div>
+        <div class="odds-row"><span class="odds-team">${esc(g.away_team)}</span><span class="odds-val">${fmtOdds(mlAway && mlAway.price)}</span></div>
+        <div class="odds-row"><span class="odds-team">${esc(g.home_team)}</span><span class="odds-val">${fmtOdds(mlHome && mlHome.price)}</span></div>
+      </div>
+      <div class="odds-box">
+        <div class="odds-box-label">Total</div>
+        <div class="odds-row"><span class="odds-team">Over ${over ? over.point : '—'}</span><span class="odds-val">${fmtOdds(over && over.price)}</span></div>
+        <div class="odds-row"><span class="odds-team">Under ${under ? under.point : '—'}</span><span class="odds-val">${fmtOdds(under && under.price)}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>
