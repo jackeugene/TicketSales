@@ -473,26 +473,6 @@
     gap: 10px;
     flex-wrap: wrap;
   }
-  .odds-fetch-bar label {
-    font-size: .78rem;
-    font-weight: 700;
-    color: #444;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    white-space: nowrap;
-  }
-  .odds-key-input {
-    flex: 1;
-    min-width: 180px;
-    border: 1.5px solid #ccc;
-    border-radius: 5px;
-    padding: 8px 10px;
-    font-size: .88rem;
-    outline: none;
-    font-family: monospace;
-    transition: border-color .15s;
-  }
-  .odds-key-input:focus { border-color: #000; }
   .odds-fetch-bar .key-hint {
     font-size: .75rem;
     color: #999;
@@ -500,6 +480,140 @@
   }
   .odds-fetch-bar .key-hint a { color: #555; }
   .live-odds-result { margin-bottom: 24px; }
+
+  /* ── Card Tracker ── */
+  #tab-cards { display: none; }
+
+  .card-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .card-summary-box {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,.09);
+    padding: 14px 16px;
+  }
+  .card-summary-box .csb-label {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #999;
+    margin-bottom: 4px;
+  }
+  .card-summary-box .csb-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.1;
+  }
+  .card-summary-box .csb-sub {
+    font-size: .72rem;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .cards-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+  }
+
+  .cards-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.12);
+  }
+  .cards-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    min-width: 900px;
+  }
+  .cards-table thead th {
+    background: #000;
+    color: #C4CED4;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 11px 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .cards-table thead th:first-child { border-radius: 8px 0 0 0; }
+  .cards-table thead th:last-child  { border-radius: 0 8px 0 0; }
+  .cards-table tbody tr:nth-child(even) { background: #f5f7f8; }
+  .cards-table tbody tr:hover { background: #eaf0f5; }
+  .cards-table td {
+    padding: 9px 12px;
+    font-size: .85rem;
+    border-bottom: 1px solid #e8eaec;
+    vertical-align: middle;
+  }
+  .cards-table tfoot td {
+    background: #000;
+    color: #fff;
+    font-weight: 700;
+    font-size: .85rem;
+    padding: 10px 12px;
+    border-bottom: none;
+  }
+  .cards-table tfoot tr td:first-child { border-radius: 0 0 0 8px; }
+  .cards-table tfoot tr td:last-child  { border-radius: 0 0 8px 0; }
+
+  .trend-up   { color: #2e7d32; font-weight: 700; }
+  .trend-down { color: #c62828; font-weight: 700; }
+  .trend-flat { color: #888;    font-weight: 600; }
+
+  .grade-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: .72rem;
+    font-weight: 700;
+    background: #f0f2f4;
+    color: #444;
+    white-space: nowrap;
+  }
+  .grade-psa10  { background: #e8f5e9; color: #2e7d32; }
+  .grade-psa9   { background: #e3f2fd; color: #1565c0; }
+  .grade-bgs95  { background: #fce4ec; color: #880e4f; }
+  .grade-raw    { background: #f5f5f5; color: #555; }
+
+  .type-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: .72rem;
+    font-weight: 700;
+    background: #000;
+    color: #C4CED4;
+    white-space: nowrap;
+  }
+
+  .cards-empty td {
+    text-align: center;
+    color: #888;
+    padding: 32px;
+    font-size: .92rem;
+  }
+
+  /* Card modal extra fields */
+  select.form-select {
+    border: 1.5px solid #ccc;
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: .9rem;
+    outline: none;
+    background: #fff;
+    transition: border-color .15s;
+    -webkit-appearance: none;
+  }
+  select.form-select:focus { border-color: #000; }
 </style>
 </head>
 <body>
@@ -523,6 +637,7 @@
     <button class="tab-btn active" id="tab-btn-tracker" onclick="switchTab('tracker')">My Transactions</button>
     <button class="tab-btn" id="tab-btn-news" onclick="switchTab('news')">Spurs News</button>
     <button class="tab-btn" id="tab-btn-odds" onclick="switchTab('odds')">Betting Odds</button>
+    <button class="tab-btn" id="tab-btn-cards" onclick="switchTab('cards')">Card Tracker</button>
   </div>
 
   <div id="tab-tracker">
@@ -563,10 +678,8 @@
 
     <!-- Live fetch bar -->
     <div class="odds-fetch-bar">
-      <label for="odds-api-key">API Key</label>
-      <input type="text" id="odds-api-key" class="odds-key-input" placeholder="Paste your free key from the-odds-api.com">
       <button class="btn-fetch" id="fetch-odds-btn" onclick="fetchLiveOdds()">&#8635; Fetch Live Odds</button>
-      <span class="key-hint">Free key at <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a> &mdash; 500 req/mo</span>
+      <span class="key-hint">Powered by <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a></span>
     </div>
     <div id="live-odds-result"></div>
 
@@ -714,14 +827,124 @@
       </table>
     </div>
 
-    <div class="odds-disclaimer">
+    <div class="odds-disclaimer" id="odds-disclaimer">
       Odds sourced from DraftKings, FanDuel &amp; Covers.com as of Apr 24, 2026. Lines move — always verify before betting.<br>
       If you or someone you know has a gambling problem, call 1-800-GAMBLER.
     </div>
 
   </div>
 
+  <!-- ── Card Tracker Tab ── -->
+  <div id="tab-cards">
+
+    <!-- Summary bar -->
+    <div class="card-summary-bar" id="cards-summary"></div>
+
+    <div class="cards-toolbar">
+      <button class="btn-add" onclick="openCardModal(null)">+ Add Card</button>
+    </div>
+
+    <div class="cards-table-wrap">
+      <table class="cards-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Card / Set</th>
+            <th>Type</th>
+            <th>Grade</th>
+            <th>Buy Price</th>
+            <th>Current Value</th>
+            <th>Gain / Loss</th>
+            <th>Trend</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cards-body"></tbody>
+        <tfoot id="cards-foot"></tfoot>
+      </table>
+    </div>
+
+  </div>
+
 </main>
+
+<!-- Card Modal -->
+<div id="card-modal-backdrop" onclick="cardBackdropClick(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;">
+  <div id="card-modal" style="background:#fff;border-radius:10px;width:min(600px,96vw);box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden;">
+    <div style="background:#000;color:#fff;padding:16px 20px;font-size:1rem;font-weight:700;" id="card-modal-title">Add Card</div>
+    <div style="padding:20px;">
+      <form id="card-form" onsubmit="onCardSubmit(event)">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="cf-player">Player</label>
+            <input type="text" id="cf-player" placeholder="e.g. Victor Wembanyama" required>
+          </div>
+          <div class="form-group full">
+            <label for="cf-card">Card / Set</label>
+            <input type="text" id="cf-card" placeholder="e.g. 2023-24 Panini Prizm #136" required>
+          </div>
+          <div class="form-group">
+            <label for="cf-type">Card Type</label>
+            <select id="cf-type" class="form-select">
+              <option>Rookie</option>
+              <option>Base</option>
+              <option>Silver Prizm</option>
+              <option>Gold Prizm</option>
+              <option>Auto</option>
+              <option>Patch Auto</option>
+              <option>Numbered Parallel</option>
+              <option>Short Print</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cf-grade">Grade</label>
+            <select id="cf-grade" class="form-select">
+              <option>PSA 10</option>
+              <option>PSA 9</option>
+              <option>PSA 8</option>
+              <option>BGS 9.5</option>
+              <option>BGS 9</option>
+              <option>SGC 10</option>
+              <option>Raw</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cf-buy">Buy Price ($)</label>
+            <input type="number" id="cf-buy" min="0" step="0.01" value="0" required>
+          </div>
+          <div class="form-group">
+            <label for="cf-current">Current Value ($)</label>
+            <input type="number" id="cf-current" min="0" step="0.01" value="0" required>
+          </div>
+          <div class="form-group">
+            <label for="cf-trend">Trend</label>
+            <select id="cf-trend" class="form-select">
+              <option value="up">↑ Rising</option>
+              <option value="flat">→ Stable</option>
+              <option value="down">↓ Falling</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cf-trendpct">Trend % (30-day)</label>
+            <input type="number" id="cf-trendpct" min="0" step="0.1" value="0">
+          </div>
+          <div class="form-group full">
+            <label for="cf-notes">Notes</label>
+            <input type="text" id="cf-notes" placeholder="e.g. Playoff breakout, rising demand">
+          </div>
+        </div>
+        <input type="hidden" id="cf-id">
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="closeCardModal()">Cancel</button>
+      <button type="submit" form="card-form" class="btn-save">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal -->
 <div id="modal-backdrop" onclick="backdropClick(event)">
@@ -961,59 +1184,74 @@ function onSubmit(e) {
 render();
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
-let newsLoaded = false;
+let newsLoaded = false; // reset when STATIC_NEWS is updated
 
 function switchTab(name) {
-  ['tracker', 'news', 'odds'].forEach(t => {
+  ['tracker', 'news', 'odds', 'cards'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
     document.getElementById('tab-btn-' + t).classList.toggle('active', t === name);
   });
-  if (name === 'news') loadNews();
+  if (name === 'news')  loadNews();
+  if (name === 'cards') renderCards();
 }
 
 // ── News ──────────────────────────────────────────────────────────────────
 const STATIC_NEWS = [
   {
-    cat: 'Playoffs · Game 3',
+    cat: 'Playoffs · TONIGHT — Game 5',
+    date: 'Apr 29, 2026',
+    headline: 'Spurs Host Game 5 Tonight — One Win from the Second Round',
+    desc: 'The AT&T Center is sold out for what could be the series clincher. San Antonio (3-1) tips off against Portland at 9:30 ET on ESPN. Wembanyama is listed as probable after posting 27/11/7 in Game 4. A win tonight ends a nine-year wait and would set up a second-round matchup vs. the Oklahoma City Thunder.',
+    url: 'https://www.nba.com/playoffs/2026/west-first-round-2',
+  },
+  {
+    cat: 'Playoffs · Game 5 Keys',
+    date: 'Apr 29, 2026',
+    headline: "Three Things to Watch: Can Portland Force a Game 6?",
+    desc: "The Trail Blazers must slow Fox in transition (he's averaged 26 pts, 8 ast in Games 3-4), limit Wembanyama's block/steal disruption, and get Anfernee Simons going from three (1-of-10 in Games 3-4). For San Antonio: close it at home, avoid a slow start, keep Harper involved off the bench.",
+    url: 'https://www.nba.com/playoffs/2026/west-first-round-2',
+  },
+  {
+    cat: 'Playoffs · Game 5 Tickets',
+    date: 'Apr 29, 2026',
+    headline: 'Game 5 Resale Prices Surge — Cheapest Seats Now $380+',
+    desc: 'With a potential series clinch on the line, secondary market prices for tonight\'s Game 5 at the AT&T Center have more than doubled since Monday. Lower-bowl seats are averaging $850 on StubHub, up from $310 before the Game 4 comeback. Courtside tickets are fetching over $6,000.',
+    url: 'https://www.nba.com/playoffs/2026/west-first-round-2',
+  },
+  {
+    cat: 'Playoffs · Game 4 Recap',
+    date: 'Apr 26, 2026',
+    headline: 'Historic Comeback: Spurs Erase 19-Point Deficit to Win Game 4, 114-93',
+    desc: 'Down 58-41 at halftime, the Spurs outscored Portland 73-35 in the second half to win 114-93 — the first team in NBA playoff history to trail by 15+ at half and win by 15+. Wembanyama returned from concussion protocol to post 27 points, 11 rebounds, 4 steals and 7 blocks. San Antonio leads the series 3-1.',
+    url: 'https://www.espn.com/nba/recap/_/gameId/401869385',
+  },
+  {
+    cat: 'Playoffs · Game 4',
+    date: 'Apr 26, 2026',
+    headline: "De'Aaron Fox Makes Spurs History With 28-Point, 7-Assist, 2-Block Gem",
+    desc: "Fox delivered the first 28-point, 6-rebound, 7-assist, 2-block game by a guard in Spurs franchise history. Coach Mitch Johnson called it Fox's best performance as a Spur. His ability to push pace in the second half helped tear open a game that looked lost at the break.",
+    url: 'https://clutchpoints.com/nba/san-antonio-spurs/spurs-news-deaaron-fox-makes-history-game-4-comeback-vs-blazers',
+  },
+  {
+    cat: 'Playoffs · Game 3 Recap',
     date: 'Apr 24, 2026',
-    headline: 'Wembanyama Questionable for Game 3 Tonight in Portland',
-    desc: 'Victor Wembanyama was cleared to travel with the team but is officially listed as questionable for tonight\'s Game 3 (10:30 ET, Prime Video) after suffering a concussion in Game 2. He returned to the practice facility Thursday for light cardio and additional evaluation. The series is tied 1-1.',
-    url: 'https://sports.yahoo.com/articles/spurs-announce-victor-wembanyamas-official-003709936.html',
+    headline: 'Harper & Castle Carry Wemby-Less Spurs to 120-108 Game 3 Win',
+    desc: 'With Wembanyama sidelined by a concussion, Dylan Harper (27 pts, 10 reb off the bench) and Stephon Castle (33 pts) combined for 60 points to lift San Antonio to a 2-1 series lead. Harper became the second-youngest player ever to score 20+ off the bench in a playoff game, behind only an 18-year-old Kobe Bryant.',
+    url: 'https://www.espn.com/nba/recap/_/gameId/401869382',
   },
   {
-    cat: 'Playoffs · Game 2 Recap',
-    date: 'Apr 22, 2026',
-    headline: 'Blazers Even Series 1-1 After Wembanyama Exits with Concussion',
-    desc: 'Scoot Henderson erupted for 31 points to lead Portland to a 106-103 victory after Wembanyama was forced out in the second half with a concussion. Wembanyama\'s injury, suffered on an awkward fall, cast a shadow over the Spurs heading into Games 3 and 4 in Portland.',
-    url: 'https://www.espn.com/nba/story/_/id/48419498/nba-playoffs-2026-play-finals-schedule-scores-news-highlights-bracket-dates',
-  },
-  {
-    cat: 'Playoffs · Game 1 Recap',
-    date: 'Apr 19, 2026',
-    headline: 'Wembanyama Drops 35 in Historic Playoff Debut, Spurs Win 111-98',
-    desc: 'Victor Wembanyama scored 35 points — a Spurs franchise record for a playoff debut, surpassing Tim Duncan\'s 32 in 1998 — as San Antonio controlled Game 1 from start to finish. His 21 first-half points set an NBA record for the most in the opening half of a playoff debut since the play-by-play era began.',
-    url: 'https://www.espn.com/nba/recap/_/gameId/401869194',
+    cat: 'Playoffs · Rookie Spotlight',
+    date: 'Apr 24, 2026',
+    headline: "Dylan Harper's Historic Playoff Debut off the Bench",
+    desc: 'The 20-year-old rookie scored 22 of his 27 points in the second half of Game 3 — 12 in the third quarter, 10 in the fourth — finishing 9-of-12 from the field and 4-of-5 from three. Harper stepped up in Wembanyama\'s absence and announced himself as a critical piece of San Antonio\'s future.',
+    url: 'https://www.nba.com/news/trail-blazers-spurs-2026-playoffs-first-round-game-3-takeaways',
   },
   {
     cat: 'Award · Sixth Man of the Year',
     date: 'Apr 22, 2026',
     headline: 'Keldon Johnson Wins 2026 NBA Sixth Man of the Year',
-    desc: 'Keldon Johnson was named the 2025-26 Kia NBA Sixth Man of the Year, joining Manu Ginobili as the only Spurs players to win the award. Johnson averaged 13.2 points and 5.4 rebounds per game off the bench, shot 52% from the floor, set a Spurs franchise record with 1,081 bench points, and played all 82 games.',
+    desc: 'Johnson was named the 2025-26 Kia NBA Sixth Man of the Year, joining Manu Ginobili as the only Spurs players to win the award. He averaged 13.2 points and 5.4 rebounds off the bench, shot 52% from the floor, set a franchise record with 1,081 bench points, and played all 82 games.',
     url: 'https://www.nba.com/news/kia-nba-sixth-man-2025-26',
-  },
-  {
-    cat: 'Award · Defensive Player of the Year',
-    date: 'Apr 2026',
-    headline: 'Wembanyama Named 2026 NBA Defensive Player of the Year',
-    desc: 'Victor Wembanyama has been named the 2026 NBA Defensive Player of the Year, becoming the youngest player in league history to win the award. The honor continues his emergence as one of the most dominant two-way players in the NBA in just his third season.',
-    url: 'https://www.nba.com/spurs/playoffs',
-  },
-  {
-    cat: 'Playoff Schedule',
-    date: 'Apr 2026',
-    headline: 'Spurs vs. Trail Blazers: Full First-Round Schedule (Series Tied 1-1)',
-    desc: 'The #2 Spurs face the #7 Trail Blazers in the Western Conference First Round. Remaining schedule: Game 3 — Fri Apr 25 @ Portland, 10:30 ET (Prime Video) · Game 4 — Sun Apr 26 @ Portland, 3:30 ET (ESPN) · Game 5 — Tue Apr 28 vs Portland, 9:30 ET (ESPN) · Games 6 & 7 if necessary.',
-    url: 'https://www.nba.com/playoffs/2026/west-first-round-2',
   },
 ];
 
@@ -1096,22 +1334,196 @@ function renderLiveCard(a) {
   </div>`;
 }
 
-// ── Live Odds ─────────────────────────────────────────────────────────────
+// ── Card Tracker ──────────────────────────────────────────────────────────
 
-// Restore saved API key on load
-document.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('oddsApiKey');
-  if (saved) document.getElementById('odds-api-key').value = saved;
-});
+const CARDS_KEY = 'spursCards';
 
-async function fetchLiveOdds() {
-  const key = document.getElementById('odds-api-key').value.trim();
-  if (!key) {
-    alert('Paste your free API key from the-odds-api.com first.');
-    document.getElementById('odds-api-key').focus();
+const SEED_CARDS = [
+  { player:'Victor Wembanyama', card:'2023-24 Panini Prizm #136', type:'Silver Prizm', grade:'PSA 10', buy:910,  current:1575, trend:'up',   trendPct:73,  notes:'Card Ladder avg $1,449 across 435 sales; surging with playoffs' },
+  { player:'Victor Wembanyama', card:'2023-24 Panini Prizm #136', type:'Rookie',      grade:'PSA 10', buy:320,  current:450,  trend:'up',   trendPct:41,  notes:'Base Prizm RC; entry-level Wemby PSA 10' },
+  { player:'Victor Wembanyama', card:'2023-24 NBA Hoops #277',    type:'Rookie',      grade:'PSA 10', buy:55,   current:78,   trend:'up',   trendPct:42,  notes:'Most affordable graded Wemby RC; high volume' },
+  { player:'Victor Wembanyama', card:'2023-24 Panini Select Concourse RC', type:'Rookie', grade:'PSA 10', buy:180, current:310, trend:'up', trendPct:72, notes:'Select brand; strong pull with collector base' },
+  { player:'Dylan Harper',      card:'2025 Topps #202',           type:'Rookie',      grade:'Raw',    buy:12,   current:38,   trend:'up',   trendPct:217, notes:'Playoff breakout — 27 pts, 10 reb in Game 3; demand exploding' },
+  { player:'Dylan Harper',      card:'2025 Topps Chrome RC',      type:'Rookie',      grade:'Raw',    buy:22,   current:65,   trend:'up',   trendPct:195, notes:'Chrome premium over base Topps; RayWave parallel hot' },
+  { player:'Stephon Castle',    card:'2024-25 Panini Prizm RC',   type:'Rookie',      grade:'Raw',    buy:18,   current:28,   trend:'up',   trendPct:56,  notes:'2026 Rising Stars; consistent production as starter' },
+  { player:"De'Aaron Fox",      card:'2017-18 Panini Prizm Silver', type:'Silver Prizm', grade:'PSA 10', buy:60, current:88,  trend:'up',   trendPct:47,  notes:'Demand spiked after Spurs trade & playoff run' },
+  { player:'Keldon Johnson',    card:'2019-20 Panini Prizm Silver RC', type:'Silver Prizm', grade:'PSA 10', buy:30, current:48, trend:'up', trendPct:60, notes:'Sixth Man of the Year bump; franchise bench record' },
+  { player:'Jeremy Sochan',     card:'2022-23 Panini Prizm RC',   type:'Rookie',      grade:'PSA 10', buy:25,   current:22,   trend:'down', trendPct:12,  notes:'Reduced role with Fox arrival; soft demand' },
+];
+
+function loadCards() {
+  try { return JSON.parse(localStorage.getItem(CARDS_KEY)) || null; }
+  catch { return null; }
+}
+
+function saveCards(cards) {
+  localStorage.setItem(CARDS_KEY, JSON.stringify(cards));
+}
+
+function getCards() {
+  let cards = loadCards();
+  if (!cards) {
+    cards = SEED_CARDS.map(c => ({ ...c, id: uid() }));
+    saveCards(cards);
+  }
+  return cards;
+}
+
+function cardGainLoss(c) { return (c.current || 0) - (c.buy || 0); }
+
+function gradeBadgeClass(g) {
+  if (!g) return 'grade-raw';
+  if (g.startsWith('PSA 10')) return 'grade-psa10';
+  if (g.startsWith('PSA 9'))  return 'grade-psa9';
+  if (g.startsWith('BGS 9.5')) return 'grade-bgs95';
+  return 'grade-raw';
+}
+
+function renderCards() {
+  const cards = getCards();
+  const body  = document.getElementById('cards-body');
+  const foot  = document.getElementById('cards-foot');
+  const sum   = document.getElementById('cards-summary');
+
+  // Summary
+  const totalValue = cards.reduce((a, c) => a + (c.current || 0), 0);
+  const totalCost  = cards.reduce((a, c) => a + (c.buy || 0), 0);
+  const totalGL    = totalValue - totalCost;
+  const hotCard    = [...cards].sort((a, b) => b.trendPct - a.trendPct)[0];
+  sum.innerHTML = `
+    <div class="card-summary-box">
+      <div class="csb-label">Cards Tracked</div>
+      <div class="csb-value">${cards.length}</div>
+    </div>
+    <div class="card-summary-box">
+      <div class="csb-label">Portfolio Value</div>
+      <div class="csb-value">$${totalValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+    </div>
+    <div class="card-summary-box">
+      <div class="csb-label">Total Gain / Loss</div>
+      <div class="csb-value ${totalGL >= 0 ? 'pl-pos' : 'pl-neg'}">${totalGL >= 0 ? '+' : ''}$${Math.abs(totalGL).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+      <div class="csb-sub">vs $${totalCost.toLocaleString('en-US', {minimumFractionDigits:2})} cost basis</div>
+    </div>
+    <div class="card-summary-box">
+      <div class="csb-label">Hottest Card</div>
+      <div class="csb-value" style="font-size:1rem">${hotCard ? esc(hotCard.player.split(' ').pop()) : '—'}</div>
+      <div class="csb-sub">${hotCard ? esc(hotCard.card) + ' +' + hotCard.trendPct + '%' : ''}</div>
+    </div>`;
+
+  if (cards.length === 0) {
+    body.innerHTML = `<tr class="cards-empty"><td colspan="11">No cards yet. Click "Add Card" to start tracking.</td></tr>`;
+    foot.innerHTML = '';
     return;
   }
-  localStorage.setItem('oddsApiKey', key);
+
+  body.innerHTML = cards.map((c, i) => {
+    const gl = cardGainLoss(c);
+    const trendHtml =
+      c.trend === 'up'   ? `<span class="trend-up">&#8593; +${c.trendPct}%</span>` :
+      c.trend === 'down' ? `<span class="trend-down">&#8595; -${c.trendPct}%</span>` :
+                           `<span class="trend-flat">&#8594; ${c.trendPct}%</span>`;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(c.player)}</strong></td>
+      <td style="max-width:200px">${esc(c.card)}</td>
+      <td><span class="type-badge">${esc(c.type)}</span></td>
+      <td><span class="grade-badge ${gradeBadgeClass(c.grade)}">${esc(c.grade)}</span></td>
+      <td>$${(c.buy||0).toFixed(2)}</td>
+      <td><strong>$${(c.current||0).toFixed(2)}</strong></td>
+      <td class="${gl >= 0 ? 'pl-pos' : 'pl-neg'}">${gl >= 0 ? '+' : ''}$${Math.abs(gl).toFixed(2)}</td>
+      <td>${trendHtml}</td>
+      <td style="font-size:.78rem;color:#666;max-width:180px">${esc(c.notes)}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" title="Edit" onclick="openCardModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">&#9998;</button>
+        <button class="action-btn" title="Delete" onclick="deleteCard('${c.id}')">&#128465;</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tv = cards.reduce((a, c) => a + (c.current||0), 0);
+  const tc = cards.reduce((a, c) => a + (c.buy||0), 0);
+  const tg = tv - tc;
+  foot.innerHTML = `<tr>
+    <td colspan="5">Totals</td>
+    <td>$${tc.toFixed(2)}</td>
+    <td><strong>$${tv.toFixed(2)}</strong></td>
+    <td class="${tg >= 0 ? 'pl-pos' : 'pl-neg'}">${tg >= 0 ? '+' : ''}$${Math.abs(tg).toFixed(2)}</td>
+    <td colspan="3"></td>
+  </tr>`;
+}
+
+function deleteCard(id) {
+  if (!confirm('Remove this card?')) return;
+  saveCards(getCards().filter(c => c.id !== id));
+  renderCards();
+}
+
+let cardEditId = null;
+
+function openCardModal(card) {
+  cardEditId = card ? card.id : null;
+  document.getElementById('card-modal-title').textContent = card ? 'Edit Card' : 'Add Card';
+  document.getElementById('cf-id').value       = cardEditId || '';
+  document.getElementById('cf-player').value   = card ? card.player   : '';
+  document.getElementById('cf-card').value     = card ? card.card     : '';
+  document.getElementById('cf-type').value     = card ? card.type     : 'Rookie';
+  document.getElementById('cf-grade').value    = card ? card.grade    : 'Raw';
+  document.getElementById('cf-buy').value      = card ? card.buy      : 0;
+  document.getElementById('cf-current').value  = card ? card.current  : 0;
+  document.getElementById('cf-trend').value    = card ? card.trend    : 'flat';
+  document.getElementById('cf-trendpct').value = card ? card.trendPct : 0;
+  document.getElementById('cf-notes').value    = card ? card.notes    : '';
+  const bd = document.getElementById('card-modal-backdrop');
+  bd.style.display = 'flex';
+  document.getElementById('cf-player').focus();
+}
+
+function closeCardModal() {
+  document.getElementById('card-modal-backdrop').style.display = 'none';
+  document.getElementById('card-form').reset();
+  cardEditId = null;
+}
+
+function cardBackdropClick(e) {
+  if (e.target === document.getElementById('card-modal-backdrop')) closeCardModal();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeCardModal(); }
+});
+
+function onCardSubmit(e) {
+  e.preventDefault();
+  const cards = getCards();
+  const card = {
+    id:       cardEditId || uid(),
+    player:   document.getElementById('cf-player').value.trim(),
+    card:     document.getElementById('cf-card').value.trim(),
+    type:     document.getElementById('cf-type').value,
+    grade:    document.getElementById('cf-grade').value,
+    buy:      parseFloat(document.getElementById('cf-buy').value)      || 0,
+    current:  parseFloat(document.getElementById('cf-current').value)  || 0,
+    trend:    document.getElementById('cf-trend').value,
+    trendPct: parseFloat(document.getElementById('cf-trendpct').value) || 0,
+    notes:    document.getElementById('cf-notes').value.trim(),
+  };
+  if (cardEditId) {
+    const i = cards.findIndex(c => c.id === cardEditId);
+    if (i !== -1) cards[i] = card;
+  } else {
+    cards.push(card);
+  }
+  saveCards(cards);
+  renderCards();
+  closeCardModal();
+}
+
+// ── Live Odds ─────────────────────────────────────────────────────────────
+
+const ODDS_API_KEY = 'aed3b45787f2bc66ded6900147612d73';
+
+async function fetchLiveOdds() {
+  const key = ODDS_API_KEY;
 
   const btn = document.getElementById('fetch-odds-btn');
   const result = document.getElementById('live-odds-result');
